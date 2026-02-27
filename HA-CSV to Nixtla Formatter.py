@@ -7,7 +7,7 @@ def prepare_for_nixtla(file_path):
     # 1. โหลดข้อมูลจาก CSV (ใส่ชื่อ Column ให้ตรงกับที่เราออกแบบใน Automation)
     columns = [
         'timestamp', 'temp', 'hum', 'p0', 'dew', 
-        'p_change', 'h_change', 't_change', 'd_change',
+        'p_change', 't_change', 'h_change', 'd_change',
         'ecmwf_press', 'ecmwf_rain', 'home_htd, 'actual'
     ]
     
@@ -26,7 +26,7 @@ def prepare_for_nixtla(file_path):
     
     # 5. จัดการ Exogenous Variables (ตัวแปรเสริมที่จะช่วยให้ AI ฉลาดขึ้น)
     # เราเลือกเอาค่า Change ต่างๆ และค่าจาก ECMWF มาเป็นฟีเจอร์ช่วยทำนาย
-    exog_cols = ['temp', 'hum', 'p0', 'p_change', 'h_change', 'd_change', 'ecmwf_press', 'ecmwf_rain']
+    exog_cols = ['temp', 'hum', 'p0', 'dew', 'p_change', 't_change', 'h_change', 'd_change', 'ecmwf_press', 'ecmwf_rain']
     
     # 6. คัดแยกเฉพาะ Column ที่ Nixtla ต้องใช้
     nixtla_df = df[['unique_id', 'ds', 'y'] + exog_cols].copy()
