@@ -14,6 +14,7 @@ action:
         
         {# 2. ข้อมูลการเปลี่ยนแปลง (Trends) #}
         {% set p_change = states('sensor.home_forecast_pressurechange') | float(0) %}
+        {% set t_change = states('sensor.home_forecast_temperaturechange') | float(0) %}
         {% set h_change = states('sensor.home_forecast_humiditychange') | float(0) %}
         {% set d_change = states('sensor.home_forecast_dewpointchange') | float(0) %}
         
@@ -22,7 +23,7 @@ action:
         {% set ecmwf_rain = state_attr('sensor.ecmwf_global_forecast', 'precipitation')[hr] | default(0) %}
         {% set ecmwf_press = state_attr('sensor.ecmwf_global_forecast', 'pressure_msl')[hr] | default(1011) %}
         
-        {# 4. ผลพยากรณ์ปัจจุบันจาก Zambretti #}
+        {# 4. ผลพยากรณ์ปัจจุบันจาก home_htd#}
         {% set home_htd = state_attr('sensor.home_forecast_now', 'weather_now') %}
 
         {# --- บันทึกลง CSV --- #}
