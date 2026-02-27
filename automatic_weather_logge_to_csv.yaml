@@ -1,0 +1,29 @@
+alias: "Weather Data Logger to CSV - AI Dataset Pro"
+trigger:
+  - platform: time_pattern
+    minutes: "/10" # ปรับมาบันทึกทุก 10 นาที ข้อมูลจะละเอียดขึ้นสำหรับ AI
+action:
+  - action: notify.weather_logger
+    data:
+      message: >
+        {# 1. ข้อมูลจาก Sensor ในบ้าน (Real-time) #}
+        {% set p0 = state_attr('sensor.home_forecast_data', 'p0') | float(1011) %}
+        {% set temp = state_attr('sensor.home_forecast_data', 'temperature') | float(33) %}
+        {% set hum = state_attr('sensor.home_forecast_data', 'humidity') | float(70) %}
+        {% set dew = state_attr('sensor.home_forecast_data', 'dew_point') | float(25) %}
+        
+        {# 2. ข้อมูลการเปลี่ยนแปลง (Trends) #}
+        {% set p_change = states('sensor.home_forecast_pressurechange') | float(0) %}
+        {% set h_change = states('sensor.home_forecast_humiditychange') | float(0) %}
+        {% set d_change = states('sensor.home_forecast_dewpointchange') | float(0) %}
+        
+        {# 3. ข้อมูลจาก ECMWF (ล้วงจาก Attribute ตามชั่วโมงปัจจุบัน) #}
+        {% set hr = now().hour %}
+        {% set ecmwf_rain = state_attr('sensor.ecmwf_global_forecast', 'precipitation')[hr] | default(0) %}
+        {% set ecmwf_press = state_attr('sensor.ecmwf_global_forecast', 'pressure_msl')[hr] | default(1011) %}
+        
+        {# 4. ผลพยากรณ์ปัจจุบันจาก Zambretti #}
+        {% set home_htd = state_attr('sensor.home_forecast_now', 'weather_now') %}
+
+        {# --- บันทึกลง CSV --- #}
+        {{ now().strftime('%Y-%m-%d %H:%M:%S') }},{{ temp }},{{ hum }},{{ p0 }},{{ dew }},{{ p_change }},{{ h_change }},{{ d_change }},{{ ecmwf_press }},{{ ecmwf_rain }},"{{ home_htd }}","RAIN_ACTUAL"
