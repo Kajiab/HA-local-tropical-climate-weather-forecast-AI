@@ -9,7 +9,7 @@ df_ready = prepare_for_nixtla('weather_dataset.csv')
 
 # 2. กำหนดรายชื่อตัวแปรเสริม (Exogenous Variables)
 # ข้อมูลอดีตที่เรามีจากเซนเซอร์
-hist_exog = ['temp', 'hum', 'p0', 'dew', 'p_change', 't_change',  'h_change', 'd_change']
+hist_exog = ['temp', 'hum', 'p0', 'dew', 'd_dew', 'p_change', 't_change',  'h_change', 'd_change']
 # ข้อมูลที่เรารู้อนาคตจาก ECMWF
 futr_exog = ['ecmwf_press', 'ecmwf_rain']
 
