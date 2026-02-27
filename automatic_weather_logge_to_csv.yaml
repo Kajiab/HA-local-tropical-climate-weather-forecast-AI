@@ -11,6 +11,7 @@ action:
         {% set temp = state_attr('sensor.home_forecast_data', 'temperature') | float(33) %}
         {% set hum = state_attr('sensor.home_forecast_data', 'humidity') | float(70) %}
         {% set dew = state_attr('sensor.home_forecast_data', 'dew_point') | float(25) %}
+        {% set d_dew = state_attr('sensor.home_forecast_data', 'd_dew') | float(5) %}
         
         {# 2. ข้อมูลการเปลี่ยนแปลง (Trends) #}
         {% set p_change = states('sensor.home_forecast_pressurechange') | float(0) %}
@@ -27,4 +28,4 @@ action:
         {% set home_htd = state_attr('sensor.home_forecast_now', 'weather_now') %}
 
         {# --- บันทึกลง CSV --- #}
-        {{ now().strftime('%Y-%m-%d %H:%M:%S') }},{{ temp }},{{ hum }},{{ p0 }},{{ dew }},{{ p_change }},{{ t_change }},{{ h_change }},{{ d_change }},{{ ecmwf_press }},{{ ecmwf_rain }},"{{ home_htd }}","No_RAIN"
+        {{ now().strftime('%Y-%m-%d %H:%M:%S') }},{{ temp }},{{ hum }},{{ p0 }},{{ dew }}, {{d_dew}}, {{ p_change }},{{ t_change }},{{ h_change }},{{ d_change }},{{ ecmwf_press }},{{ ecmwf_rain }},"{{ home_htd }}","No_RAIN"
