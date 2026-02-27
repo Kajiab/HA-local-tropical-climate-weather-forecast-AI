@@ -23,7 +23,7 @@ action:
         {% set ecmwf_press = state_attr('sensor.ecmwf_global_forecast', 'pressure_msl')[hr] | default(1011) %}
         
         {# 4. ผลพยากรณ์ปัจจุบันจาก Zambretti #}
-        {% set zambretti = state_attr('sensor.home_forecast_now', 'weather_now') %}
+        {% set home_htd = state_attr('sensor.home_forecast_now', 'weather_now') %}
 
         {# --- บันทึกลง CSV --- #}
-        {{ now().strftime('%Y-%m-%d %H:%M:%S') }},{{ temp }},{{ hum }},{{ p0 }},{{ dew }},{{ p_change }},{{ h_change }},{{ d_change }},{{ ecmwf_press }},{{ ecmwf_rain }},"{{ zambretti }}","RAIN_ACTUAL"
+        {{ now().strftime('%Y-%m-%d %H:%M:%S') }},{{ temp }},{{ hum }},{{ p0 }},{{ dew }},{{ p_change }},{{ h_change }},{{ d_change }},{{ ecmwf_press }},{{ ecmwf_rain }},"{{ home_htd }}","RAIN_ACTUAL"
