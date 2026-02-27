@@ -1,0 +1,213 @@
+
+
+template:
+  - sensor:
+      # ------------------------------------------------------
+      # MAIN AGGREGATE SENSOR
+      # ------------------------------------------------------
+      - name: "Home forecast data"
+        unique_id: home_forecast_data
+        availability: >
+          {{ states('sensor.living_room_temperature') not in ['unknown','unavailable'] and states('sensor.living_room_pressure') not in ['unknown','unavailable'] and states('sensor.living_room_humidity') not in ['unknown','unavailable'] }}
+        state: "Active"
+        attributes:
+          temperature: >-
+            {# setup sensor to actual sensor in HA #}
+            {{states('sensor.living_room_temperature') | float(33) }}
+
+          humidity: >-
+            {{states('sensor.living_room_humidity') | float(70) }}
+
+          p0: >-
+            {# pressure sensor ที่ระดับตำแหน่งปัจจุบัน (ไม่ใช่ระดับน้ำทะเล) #}
+            {% set pressure = states('sensor.living_room_pressure') | float(1011) %}
+            {% set temp = states('sensor.living_room_temperature') | float(33) %}
+            {% set height = 3 %}
+            {% set p0 = pressure * (1 - ((0.0065 * height) / (temp + (0.0065 * height) + 273.15))) ** -5.257 %}
+            {{ p0 | round(1) }}
+            
+          dew_point: >-
+            {% set RH = states('sensor.living_room_humidity') | float(70) %}
+            {% set T = states('sensor.living_room_temperature') | float(33) %}
+            {% set L = log(RH/100) + (17.625 * T / (243.04 + T)) %}
+            {{ (243.04 * L / (17.625 - L)) | round(2) }}
+
+
+      - name: "Home Forecast Now"
+        unique_id: home_forecast_now
+        state: "Active"
+        attributes:
+          weather_now: >-        
+          {# Forecast from pressure #}
+            
+          {% set f = namespace(res=[]) %}
+            
+          {% set conditions = [
+            ('Stormy'),
+            ('Rainy'),
+            ('Cloudy'),
+            ('Normal/Mixed'),
+            ('Sunny/Clear sky'),
+            ('Cold/Extra Dry')
+          ] %}
+          {% set pressure_system = [
+            ('Low Pressure'),
+            ('Moderate Pressure'),
+            ('High Pressure')
+          ] %}
+
+          {% set p0 = state_attr('sensor.home_forecast_data', 'p0') | float(1011) %}
+          {% set temp = state_attr('sensor.home_forecast_data', 'temperature') | float(33) %}
+          {% set hum = state_attr('sensor.home_forecast_data', 'humidity') | float(70) %}
+
+          {% if p0 < 1005 %}
+            {# ---(>= 30C) --- #}
+            {% if temp >= 30 %}
+              {% if hum < 60 %}
+                {# DL /Sunny/Clear sky #}
+                {% set f.res = [conditions[4], pressure_system[0]] %}
+              {% elif hum < 80 %}
+                {# DL Normal/Mixed #}
+                {% set f.res = [conditions[3], pressure_system[0]] %}
+              {% elif hum < 85 %}
+                {# DL Cloudy #}
+                {% set f.res = [conditions[2], pressure_system[0]] %}
+              {% else %}
+                {# DL Rainy #}
+                {% set f.res = [conditions[1], pressure_system[0]] %}
+              {% endif %}
+             {# --- (< 30C) --- #}
+            {% else %}
+              {% if hum <= 80 %}
+                {# DL Stormy #}
+                {% set f.res = [conditions[2], pressure_system[0]] %}
+              {% elif hum <= 90 %}
+                {% set f.res = [conditions[1], pressure_system[0]] %}
+              {% else %}
+                {% set f.res = [conditions[0], pressure_system[0]] %}
+              {% endif %}
+            {% endif %}
+           
+          {% elif 1005 <= p0 < 1010 %}
+            {% if hum >= 90 %}
+              {% set f.res = [conditions[1], pressure_system[1]] %}
+            {% elif hum <= 60 %}
+              {% set f.res = [conditions[3], pressure_system[1]] %}
+            {% else %}
+              {% set f.res = [conditions[2], pressure_system[1]] %}
+            {% endif %}
+            
+          {% elif 1010 <= p0 < 1014 %}
+            {% if hum <= 60 %}
+              {% set f.res = [conditions[4], pressure_system[1]] %}
+            {% else %}
+              {% set f.res = [conditions[3], pressure_system[1]] %}
+            {% endif %}
+              
+          {% elif 1014 <= p0 < 1018 %}
+            {% if temp >= 30 %}
+              {% set f.res = [conditions[4], pressure_system[2]] %}
+            {% else %}
+              {% set f.res = [conditions[5], pressure_system[2]] %}
+            {% endif %}
+          {% endif %}  
+          {{ f.res }}
+
+          icon_code: >-
+            {% set status = state_attr('sensor.home_forecast_now', 'weather_now')[0] %}
+            {% set is_night = is_state('sun.sun', 'below_horizon') %}
+            {% if status == 'Rainy' %} mdi:weather-pouring
+            {% elif status == 'Stormy' %} mdi:weather-lightning-rainy
+            {% elif status == 'Cloudy' %} mdi:weather-cloudy
+            {% elif status == 'Normal/Mixed' %} {{ 'mdi:weather-night-partly-cloudy' if is_night else 'mdi:weather-partly-cloudy' }}
+            {% elif status == 'Sunny/Clear sky' %} {{ 'mdi:weather-night' if is_night else 'mdi:weather-sunny' }}
+            {% else %} mdi:weather-snow
+            {% endif %}
+
+      - name: "Home Forecast next"
+        unique_id: home_forecast_next
+        state: >-
+          {% set p_now = state_attr('sensor.home_forecast_data', 'p0') | float(1011) %}
+          {% set temp_now = state_attr('sensor.home_forecast_data', 'temperature') | float(33) %}
+          {% set hum_now = state_attr('sensor.home_forecast_data', 'humidity') | float(70) %}
+          {% set dew_now = state_attr('sensor.home_forecast_data', 'dew_point') | float(25) %}
+          {% set p_change = states('sensor.home_forecast_pressurechange') | float(0) %}
+          {% set h_change = states('sensor.home_forecast_humiditychange') | float(0) %}
+          {% set t_change = states('sensor.home_forecast_temperaturechange') | float(0) %}
+          {% set t_change = states('sensor.home_forecast_dewpointchange') | float(0) %}
+          {% set p_change_24h = states('sensor.home_forecast_pressurechange24hr') | float(0) %}
+          
+          {% if p_change_24h < -3.0 %}
+             {# Big pressure drop usually means a Typhoon or Monsoon Depression #}
+             Stormy
+          {% elif hum_now > 85 and (t_now - dew_now) < 2 %}
+             {# Air is saturated and cooling #}
+             Rainy
+          {% elif h_change > 10 and hum_now > 75 %}
+             {# Humidity is spiking fast - common before afternoon rain #}
+             Rainy
+          {% elif p_now < 1008 and hum_now > 70 %}
+             Cloudy
+          {% elif p_now > 1012 and hum_now < 65 %}
+             Sunny/Clear
+          {% else %}
+             Partly Cloudy
+          {% endif %}
+
+        attributes:
+          icon_code: >-
+            {% set status = states('sensor.home_forecast_next') %}
+            {% set is_night = is_state('sun.sun', 'below_horizon') %}
+            {% if status == 'Rainy' or 'Stormy' %} mdi:weather-pouring
+            {% elif status == 'Cloudy' %} mdi:weather-cloudy
+            {% elif status == 'Partly Cloudy' %} {{ 'mdi:weather-night-partly-cloudy' if is_night else 'mdi:weather-partly-cloudy' }}
+            {% else %} {{ 'mdi:weather-night' if is_night else 'mdi:weather-sunny' }}
+            {% endif %}
+
+# ------------------------------------------------------
+# STATISTICS SENSORS (ใช้คำนวณ trend / change)
+# ------------------------------------------------------
+sensor:
+  # pressure change
+  - platform: statistics
+    name: Home forecast PressureChange
+    entity_id: sensor.living_room_pressure
+    state_characteristic: change
+    max_age:
+      minutes: 180
+    sampling_size: 50
+    
+  - platform: statistics
+    name: Home forecast PressureChange24hr
+    entity_id: sensor.living_room_pressure
+    state_characteristic: change
+    max_age:
+      minutes: 1440
+    sampling_size: 200
+
+  # temperature change
+  - platform: statistics
+    name: Home forecast TemperatureChange
+    entity_id: sensor.living_room_temperature
+    state_characteristic: change
+    max_age:
+      minutes: 180
+    sampling_size: 50
+
+  # humidity change
+  - platform: statistics
+    name: Home forecast HumidityChange
+    entity_id: sensor.living_room_humidity
+    state_characteristic: change
+    max_age:
+      minutes: 180
+    sampling_size: 50  
+    
+   # dewpoint change
+  - platform: statistics
+    name: Home forecast DewpointChange
+    entity_id: sensor.home_living_room_dewpoint
+    state_characteristic: change
+    max_age:
+      minutes: 180
+    sampling_size: 50 
