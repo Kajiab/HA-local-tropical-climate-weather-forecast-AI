@@ -134,7 +134,7 @@ template:
           {% set p_change = states('sensor.home_forecast_pressurechange') | float(0) %}
           {% set h_change = states('sensor.home_forecast_humiditychange') | float(0) %}
           {% set t_change = states('sensor.home_forecast_temperaturechange') | float(0) %}
-          {% set t_change = states('sensor.home_forecast_dewpointchange') | float(0) %}
+          {% set d_change = states('sensor.home_forecast_dewpointchange') | float(0) %}
           {% set p_change_24h = states('sensor.home_forecast_pressurechange24hr') | float(0) %}
           
           {% if p_change_24h < -3.0 %}
