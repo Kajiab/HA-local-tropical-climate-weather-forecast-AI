@@ -32,6 +32,13 @@ template:
             {% set L = log(RH/100) + (17.625 * T / (243.04 + T)) %}
             {{ (243.04 * L / (17.625 - L)) | round(2) }}
 
+          d_dew: >-
+            {% set temp = states('sensor.living_room_temperature') | float(33) %}
+            {% set RH = states('sensor.living_room_humidity') | float(70) %}
+            {% set T = states('sensor.living_room_temperature') | float(33) %}
+            {% set L = log(RH/100) + (17.625 * T / (243.04 + T)) %}
+            {% set dew = (243.04 * L / (17.625 - L)) | round(2) %}
+            {{ temp - dew | round(2) }}
 
       - name: "Home Forecast Now"
         unique_id: home_forecast_now
